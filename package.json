@@ -1,0 +1,36 @@
+{
+  "name": "tasks_api_atom",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JuanPabloLoCoco/tasks_api.git"
+  },
+  "keywords": [],
+  "author": "Juan Pablo Lo Coco",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JuanPabloLoCoco/tasks_api/issues"
+  },
+  "homepage": "https://github.com/JuanPabloLoCoco/tasks_api#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/jest": "^29.5.2",
+    "@types/node": "^20.3.1",
+    "@types/supertest": "^2.0.12",
+    "jest": "^29.5.0",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.3"
+  }
+}
