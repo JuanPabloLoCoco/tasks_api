@@ -12,4 +12,8 @@ export class TaskService {
   async getAllTasks(): Promise<Task[]> {
     return await this.taskRepository.getAll();
   }
+
+  async getTaskById(id: string): Promise<Task | null> {
+    return await this.taskRepository.getById(id);
+  }
 }

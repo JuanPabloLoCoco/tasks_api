@@ -41,5 +41,16 @@ export const tasksRouterBuilder = (taskRepository: TaskRepository) => {
     return res.status(200).json({ tasks });
   });
 
+  router.get("/:id", async (req, res) => {
+    const taskId = req.params.id;
+
+    const taskFound = await taskService.getTaskById(taskId);
+    if (taskFound) {
+      return res.status(200).json(taskFound);
+    }
+    return res
+      .status(400)
+      .json({ message: `task with id=${taskId} was not found` });
+  });
   return router;
 };

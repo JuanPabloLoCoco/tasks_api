@@ -122,7 +122,7 @@ describe("POST /tasks", () => {
     expect(response.body.description).toEqual(newTask.description);
     expect(response.body.id).toBeDefined();
     expect(response.body.createdAt).toBeDefined();
-  }, 10000);
+  });
 });
 
 describe("GET /tasks", () => {
@@ -171,6 +171,50 @@ describe("GET /tasks", () => {
   });
 });
 
+describe("GET /tasks/{taskId}", () => {
+  const { app, server } = setupApp(
+    { taskRepositories: new InMemoryTaskRepository() },
+    { port: 3003 }
+  );
+
+  beforeAll((done) => {
+    done();
+  });
+
+  afterAll((done) => {
+    server.close(done);
+  });
+
+  it("on asking for not found task  should return 404", async () => {
+    const res = await request(app).get("/tasks/notFound").send();
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body.message).toEqual("task with id=notFound was not found");
+  });
+
+  it("on asking for found task, should return created task", async () => {
+    const newTask = {
+      title: "New Task",
+      description: "This is a new task",
+    };
+    const response = await request(app).post("/tasks").send(newTask);
+    expect(response.status).toBe(201);
+
+    const task = response.body;
+
+    const resGet = await request(app).get(`/tasks/${response.body.id}`).send();
+    expect(resGet.status).toBe(200);
+
+    expect(resGet.body).toHaveProperty("title");
+    expect(resGet.body).toHaveProperty("description");
+    expect(resGet.body).toHaveProperty("state");
+    expect(resGet.body).toHaveProperty("id");
+    expect(resGet.body).toHaveProperty("createdAt");
+
+    expect(resGet.body).toStrictEqual(task);
+  });
+});
+
 describe("Tasks Service", () => {
   it("Create task in task service", async () => {
     const mockCreateTask = jest.fn().mockReturnValue({
@@ -184,6 +228,7 @@ describe("Tasks Service", () => {
     const taskService = new TaskService({
       create: mockCreateTask,
       getAll: jest.fn(),
+      getById: jest.fn(),
     });
 
     const taskCreated = await taskService.createTask("A", "B");
@@ -218,11 +263,47 @@ describe("Tasks Service", () => {
     ]);
     const taskService = new TaskService({
       create: jest.fn(),
+      getById: jest.fn(),
       getAll: mockGetAllTasks,
     });
 
     const tasksGetAll = await taskService.getAllTasks();
     expect(mockGetAllTasks).toHaveBeenCalled();
     expect(tasksGetAll).toHaveLength(3);
+  });
+
+  it("Get task by id", async () => {
+    const mockGetTaskById = jest.fn().mockImplementation((id) => {
+      if (id !== "0") {
+        return null;
+      }
+      return {
+        title: "A",
+        description: "B",
+        createdAt: new Date(),
+        id: "0",
+        state: TaskState.PENDING,
+      };
+    });
+
+    const taskService = new TaskService({
+      create: jest.fn(),
+      getById: mockGetTaskById,
+      getAll: jest.fn(),
+    });
+
+    const taskGetById = await taskService.getTaskById("1");
+    expect(mockGetTaskById).toHaveBeenCalled();
+    expect(taskGetById).toBeNull();
+
+    const taskGetById2 = await taskService.getTaskById("0");
+    expect(mockGetTaskById).toHaveBeenCalled();
+    expect(taskGetById2).toStrictEqual({
+      title: "A",
+      description: "B",
+      createdAt: new Date(),
+      id: "0",
+      state: TaskState.PENDING,
+    });
   });
 });
