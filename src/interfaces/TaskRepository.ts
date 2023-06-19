@@ -6,4 +6,5 @@ export interface TaskRepository {
   getAll(): Promise<Task[]>;
   getById(id: string): Promise<Task | null>;
   update(task: Task): Promise<Task>;
+  delete(id: string): Promise<void>;
 }

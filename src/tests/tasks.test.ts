@@ -400,6 +400,69 @@ describe("PUT /tasks/{taskId}", () => {
   });
 });
 
+describe("DELETE /tasks/{taskId}", () => {
+  const taskRepository = new InMemoryTaskRepository();
+  const { app, server } = setupApp(
+    { taskRepositories: taskRepository },
+    { port: 30005 }
+  );
+
+  beforeAll((done) => {
+    done();
+  });
+
+  afterAll((done) => {
+    server.close(done);
+  });
+
+  it("on deleting not found task should return 404", async () => {
+    const res = await request(app).put("/tasks/notFound").send({});
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body.message).toEqual("task with id=notFound was not found");
+  });
+
+  it("on delete task should be deleted", async () => {
+    const res = await request(app)
+      .post(`/tasks`)
+      .send({ title: "Task to delete", description: "Task to delete" });
+
+    const task = res.body;
+
+    const res2 = await request(app).get(`/tasks`).send();
+    expect(res2.status).toBe(200);
+    expect(res2.body).toStrictEqual({ tasks: [task] });
+
+    const res3 = await request(app).get(`/tasks/${task.id}`).send();
+    expect(res3.status).toBe(200);
+    expect(res3.body).toStrictEqual(task);
+
+    const deleteRes = await request(app).delete(`/tasks/${task.id}`).send();
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body).toHaveProperty("message");
+    expect(deleteRes.body.message).toEqual(
+      `task with id=${task.id} was deleted`
+    );
+
+    const res4 = await request(app).get(`/tasks`).send();
+    expect(res4.status).toBe(200);
+    expect(res4.body).toStrictEqual({ tasks: [] });
+
+    const res5 = await request(app).get(`/tasks/${task.id}`).send();
+    expect(res5.status).toBe(404);
+    expect(res5.body).toStrictEqual({
+      message: `task with id=${task.id} was not found`,
+    });
+
+    const deleteRes2 = await request(app).delete(`/tasks/${task.id}`).send();
+    expect(deleteRes2.status).toBe(404);
+    expect(deleteRes2.body).toHaveProperty("message");
+    expect(deleteRes2.body.message).toEqual(
+      `task with id=${task.id} was not found`
+    );
+  });
+});
+
 describe("Tasks Service", () => {
   it("Create task in task service", async () => {
     const mockCreateTask = jest.fn().mockReturnValue({
@@ -415,6 +478,7 @@ describe("Tasks Service", () => {
       getAll: jest.fn(),
       getById: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     });
 
     const taskCreated = await taskService.createTask("A", "B");
@@ -452,6 +516,7 @@ describe("Tasks Service", () => {
       getById: jest.fn(),
       getAll: mockGetAllTasks,
       update: jest.fn(),
+      delete: jest.fn(),
     });
 
     const tasksGetAll = await taskService.getAllTasks();
@@ -479,6 +544,7 @@ describe("Tasks Service", () => {
       getById: mockGetTaskById,
       getAll: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     });
 
     const taskGetById = await taskService.getTaskById("1");

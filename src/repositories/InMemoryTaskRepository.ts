@@ -41,4 +41,7 @@ export class InMemoryTaskRepository implements TaskRepository {
     return task;
   }
 
+  async delete(id: string): Promise<void> {
+    this.tasks.delete(id);
+  }
 }

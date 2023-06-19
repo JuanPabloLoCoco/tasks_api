@@ -108,10 +108,6 @@ export const tasksRouterBuilder = (taskRepository: TaskRepository) => {
         state === "complete" ? TaskState.COMPLETE : TaskState.PENDING;
     }
 
-    console.log("Pasaron las validaciones");
-
-    console.log(fieldToEdit);
-
     if (Object.keys(fieldToEdit).length === 0) {
       return res.status(200).json(taskFound);
     }
@@ -121,9 +117,24 @@ export const tasksRouterBuilder = (taskRepository: TaskRepository) => {
       ...fieldToEdit,
     });
 
-    console.log("Retornando");
-
     return res.status(200).json(editedTask);
+  });
+
+  router.delete("/:id", async (req, res) => {
+    const taskId = req.params.id;
+
+    const taskFound = await taskService.getTaskById(taskId);
+    if (!taskFound) {
+      return res
+        .status(404)
+        .json({ message: `task with id=${taskId} was not found` });
+    }
+
+    const deleteTaskAwait = await taskService.deleteTask(taskId);
+
+    return res
+      .status(200)
+      .json({ message: `task with id=${taskId} was deleted` });
   });
 
   return router;
