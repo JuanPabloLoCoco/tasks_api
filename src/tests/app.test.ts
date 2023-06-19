@@ -1,5 +1,11 @@
 import request from "supertest";
-import app, { server } from "..";
+import { setupApp } from "..";
+import { InMemoryTaskRepository } from "../repositories/InMemoryTaskRepository";
+
+const { app, server } = setupApp(
+  { taskRepositories: new InMemoryTaskRepository() },
+  { port: 3000 }
+);
 
 beforeAll((done) => {
   done();

@@ -18,4 +18,7 @@ export class InMemoryTaskRepository implements TaskRepository {
     return newTask;
   }
 
+  async getAll(): Promise<Task[]> {
+    return Array.from(this.tasks.values());
+  }
 }

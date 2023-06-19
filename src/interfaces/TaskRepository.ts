@@ -3,4 +3,5 @@ import { Task, TaskToCreate } from "./Task";
 
 export interface TaskRepository {
   create(task: TaskToCreate): Promise<Task>;
+  getAll(): Promise<Task[]>;
 }

@@ -9,4 +9,7 @@ export class TaskService {
     return await this.taskRepository.create({ title, description });
   }
 
+  async getAllTasks(): Promise<Task[]> {
+    return await this.taskRepository.getAll();
+  }
 }

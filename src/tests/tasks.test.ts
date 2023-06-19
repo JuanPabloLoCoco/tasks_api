@@ -1,15 +1,9 @@
 import request from "supertest";
-import app, { server } from "..";
+import express from "express";
 import { TaskService } from "../services/TaskService";
 import { TaskState, TaskToCreate } from "../interfaces/Task";
-
-beforeAll((done) => {
-  done();
-});
-
-afterAll((done) => {
-  server.close(done);
-});
+import { setupApp } from "..";
+import { InMemoryTaskRepository } from "../repositories/InMemoryTaskRepository";
 
 const validationErrors = {
   titleRequired:
@@ -19,6 +13,19 @@ const validationErrors = {
 };
 
 describe("POST /tasks", () => {
+  const { app, server } = setupApp(
+    { taskRepositories: new InMemoryTaskRepository() },
+    { port: 3001 }
+  );
+
+  beforeAll((done) => {
+    done();
+  });
+
+  afterAll((done) => {
+    server.close(done);
+  });
+
   it("on invalid task should return field are invalid and return 400 status", async () => {
     const taskNotSendTitle = {};
 
@@ -118,6 +125,52 @@ describe("POST /tasks", () => {
   }, 10000);
 });
 
+describe("GET /tasks", () => {
+  const { app, server } = setupApp(
+    { taskRepositories: new InMemoryTaskRepository() },
+    { port: 3002 }
+  );
+
+  beforeAll((done) => {
+    done();
+  });
+
+  afterAll((done) => {
+    server.close(done);
+  });
+
+  it("on no tasks, should return empty array", async () => {
+    const res = await request(app).get("/tasks").send();
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("tasks");
+    expect(Array.isArray(res.body.tasks)).toBe(true);
+    expect(res.body.tasks).toHaveLength(0);
+  });
+
+  it("on create tasks, should return created task", async () => {
+    const newTask = {
+      title: "New Task",
+      description: "This is a new task",
+    };
+    const response = await request(app).post("/tasks").send(newTask);
+    expect(response.status).toBe(201);
+
+    const resGet = await request(app).get("/tasks").send();
+    expect(resGet.status).toBe(200);
+    expect(resGet.body).toHaveProperty("tasks");
+    expect(Array.isArray(resGet.body.tasks)).toBe(true);
+    expect(resGet.body.tasks).toHaveLength(1);
+    expect(resGet.body.tasks[0]).toHaveProperty("title");
+    expect(resGet.body.tasks[0]).toHaveProperty("description");
+    expect(resGet.body.tasks[0]).toHaveProperty("state");
+    expect(resGet.body.tasks[0]).toHaveProperty("id");
+    expect(resGet.body.tasks[0]).toHaveProperty("createdAt");
+    expect(resGet.body.tasks[0].title).toEqual(newTask.title);
+    expect(resGet.body.tasks[0].description).toEqual(newTask.description);
+    expect(resGet.body.tasks[0].state).toEqual(TaskState.PENDING);
+  });
+});
+
 describe("Tasks Service", () => {
   it("Create task in task service", async () => {
     const mockCreateTask = jest.fn().mockReturnValue({
@@ -127,23 +180,49 @@ describe("Tasks Service", () => {
       id: 0,
       state: TaskState.PENDING,
     });
-    //   (taskToCreate: TaskToCreate) => {
-    //   return Promise.resolve({
-    //     title: taskToCreate.title,
-    //     description: taskToCreate.description,
-    //     createdAt: new Date(),
-    //     id: 0,
-    //     state: TaskState.PENDING,
-    //   });
-    // }
 
     const taskService = new TaskService({
       create: mockCreateTask,
+      getAll: jest.fn(),
     });
 
     const taskCreated = await taskService.createTask("A", "B");
     expect(mockCreateTask).toHaveBeenCalled();
     expect(taskCreated).toHaveProperty("id");
     expect(taskCreated.id).toEqual(0);
+  });
+
+  it("Get all tasks", async () => {
+    const mockGetAllTasks = jest.fn().mockReturnValue([
+      {
+        title: "A",
+        description: "B",
+        createdAt: new Date(),
+        id: 0,
+        state: TaskState.PENDING,
+      },
+      {
+        title: "A",
+        description: "C",
+        createdAt: new Date(),
+        id: 1,
+        state: TaskState.COMPLETE,
+      },
+      {
+        title: "C",
+        description: "B",
+        createdAt: new Date(),
+        id: 2,
+        state: TaskState.PENDING,
+      },
+    ]);
+    const taskService = new TaskService({
+      create: jest.fn(),
+      getAll: mockGetAllTasks,
+    });
+
+    const tasksGetAll = await taskService.getAllTasks();
+    expect(mockGetAllTasks).toHaveBeenCalled();
+    expect(tasksGetAll).toHaveLength(3);
   });
 });
