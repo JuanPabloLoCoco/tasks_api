@@ -16,4 +16,8 @@ export class TaskService {
   async getTaskById(id: string): Promise<Task | null> {
     return await this.taskRepository.getById(id);
   }
+
+  async updateTask(task: Task): Promise<Task> {
+    return await this.taskRepository.update(task);
+  }
 }

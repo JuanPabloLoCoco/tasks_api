@@ -6,6 +6,15 @@ import { v4 as uuidv4 } from "uuid";
 export class InMemoryTaskRepository implements TaskRepository {
   private tasks: Map<string, Task> = new Map();
 
+  constructor(initialTasks?: Task[]) {
+    if (!initialTasks) {
+      return;
+    }
+    for (let task of initialTasks) {
+      this.tasks.set(task.id, task);
+    }
+  }
+
   async create(task: TaskToCreate): Promise<Task> {
     let taskId = uuidv4();
     const newTask: Task = {
@@ -26,4 +35,10 @@ export class InMemoryTaskRepository implements TaskRepository {
     const task = this.tasks.get(id);
     return task ? task : null;
   }
+
+  async update(task: Task): Promise<Task> {
+    this.tasks.set(task.id, task);
+    return task;
+  }
+
 }

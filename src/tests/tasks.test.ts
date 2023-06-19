@@ -15,7 +15,7 @@ const validationErrors = {
 describe("POST /tasks", () => {
   const { app, server } = setupApp(
     { taskRepositories: new InMemoryTaskRepository() },
-    { port: 3001 }
+    { port: 30001 }
   );
 
   beforeAll((done) => {
@@ -128,7 +128,7 @@ describe("POST /tasks", () => {
 describe("GET /tasks", () => {
   const { app, server } = setupApp(
     { taskRepositories: new InMemoryTaskRepository() },
-    { port: 3002 }
+    { port: 30002 }
   );
 
   beforeAll((done) => {
@@ -174,7 +174,7 @@ describe("GET /tasks", () => {
 describe("GET /tasks/{taskId}", () => {
   const { app, server } = setupApp(
     { taskRepositories: new InMemoryTaskRepository() },
-    { port: 3003 }
+    { port: 30003 }
   );
 
   beforeAll((done) => {
@@ -187,7 +187,7 @@ describe("GET /tasks/{taskId}", () => {
 
   it("on asking for not found task  should return 404", async () => {
     const res = await request(app).get("/tasks/notFound").send();
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
     expect(res.body).toHaveProperty("message");
     expect(res.body.message).toEqual("task with id=notFound was not found");
   });
@@ -215,6 +215,191 @@ describe("GET /tasks/{taskId}", () => {
   });
 });
 
+describe("PUT /tasks/{taskId}", () => {
+  const defaultTask = {
+    id: "0",
+    title: "title",
+    description: "desc",
+    createdAt: new Date(),
+    state: TaskState.PENDING,
+  };
+  const taskRepository = new InMemoryTaskRepository([defaultTask]);
+
+  const { app, server } = setupApp(
+    { taskRepositories: taskRepository },
+    { port: 30004 }
+  );
+
+  beforeAll((done) => {
+    done();
+  });
+
+  afterAll((done) => {
+    server.close(done);
+  });
+
+  it("on asking for not found task  should return 404", async () => {
+    const res = await request(app).put("/tasks/notFound").send({});
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body.message).toEqual("task with id=notFound was not found");
+  });
+
+  it("on sending invalid fields (title) should not update", async () => {
+    const res = await request(app)
+      .put(`/tasks/${defaultTask.id}`)
+      .send({ title: { key: "invalid title" } });
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body.message).toEqual(
+      "field title must be a string with less than 100 characters"
+    );
+
+    const res2 = await request(app)
+      .put(`/tasks/${defaultTask.id}`)
+      .send({ title: new Array(101).join("a") });
+    expect(res2.status).toBe(400);
+    expect(res2.body).toHaveProperty("message");
+    expect(res2.body.message).toEqual(
+      "field title must be a string with less than 100 characters"
+    );
+  });
+
+  it("on sending invalid fields (description) should not update", async () => {
+    const res = await request(app)
+      .put(`/tasks/${defaultTask.id}`)
+      .send({ description: { key: "invalid description" } });
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body.message).toEqual(
+      "field description must be a string with less than 500 characters"
+    );
+
+    const res2 = await request(app)
+      .put(`/tasks/${defaultTask.id}`)
+      .send({ description: new Array(501).join("a") });
+    expect(res2.status).toBe(400);
+    expect(res2.body).toHaveProperty("message");
+    expect(res2.body.message).toEqual(
+      "field description must be a string with less than 500 characters"
+    );
+  });
+
+  it("on sending invalid fields (state) should not update", async () => {
+    const res = await request(app)
+      .put(`/tasks/${defaultTask.id}`)
+      .send({ state: { key: "invalid state" } });
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body.message).toEqual(
+      `field state can be '${TaskState.PENDING}' or '${TaskState.COMPLETE}'`
+    );
+
+    const res2 = await request(app)
+      .put(`/tasks/${defaultTask.id}`)
+      .send({ state: "not valid state" });
+    expect(res2.status).toBe(400);
+    expect(res2.body).toHaveProperty("message");
+    expect(res2.body.message).toEqual(
+      `field state can be '${TaskState.PENDING}' or '${TaskState.COMPLETE}'`
+    );
+  });
+
+  it("On editing no field, should return 200", async () => {
+    const newTask = {
+      title: "Test 1",
+      description: "Test 1",
+    };
+    const response = await request(app).post("/tasks").send(newTask);
+    expect(response.status).toBe(201);
+
+    const task = response.body;
+
+    const resNoEdits = await request(app).put(`/tasks/${task.id}`).send({});
+
+    expect(resNoEdits.status).toBe(200);
+
+    const resGet = await request(app).get(`/tasks/${response.body.id}`).send();
+    expect(resGet.status).toBe(200);
+    expect(resGet.body).toStrictEqual({
+      ...task,
+    });
+  });
+
+  it("on editing found task, should be edited", async () => {
+    const newTask = {
+      title: "Test 1",
+      description: "Test 1",
+    };
+    const response = await request(app).post("/tasks").send(newTask);
+    expect(response.status).toBe(201);
+
+    const task = response.body;
+
+    // Edit title ----------------------------------------------------------------------------------
+    const resEditTitle = await request(app)
+      .put(`/tasks/${task.id}`)
+      .send({ title: "Title 2" });
+    expect(resEditTitle.status).toBe(200);
+
+    // Check that title has changed
+    const resGet = await request(app).get(`/tasks/${response.body.id}`).send();
+    expect(resGet.status).toBe(200);
+    expect(resGet.body).toStrictEqual({ ...task, title: "Title 2" });
+
+    // Edit description ----------------------------------------------------------------------------
+    const resEditDescription = await request(app)
+      .put(`/tasks/${task.id}`)
+      .send({ description: "Desc 2" });
+
+    expect(resEditDescription.status).toBe(200);
+
+    const resGet2 = await request(app).get(`/tasks/${response.body.id}`).send();
+    expect(resGet2.status).toBe(200);
+    expect(resGet2.body).toStrictEqual({
+      ...task,
+      title: "Title 2",
+      description: "Desc 2",
+    });
+
+    // Edit State ----------------------------------------------------------------------------------
+    const resEditState = await request(app)
+      .put(`/tasks/${task.id}`)
+      .send({ state: TaskState.COMPLETE });
+
+    expect(resEditState.status).toBe(200);
+
+    const resGet3 = await request(app).get(`/tasks/${response.body.id}`).send();
+    expect(resGet3.status).toBe(200);
+    expect(resGet3.body).toStrictEqual({
+      ...task,
+      title: "Title 2",
+      description: "Desc 2",
+      state: TaskState.COMPLETE,
+    });
+
+    // Edit Multiple states-------------------------------------------------------------------------
+    const resEditMultiple = await request(app).put(`/tasks/${task.id}`).send({
+      state: TaskState.PENDING,
+      title: "new title",
+      description: "new desc",
+    });
+
+    expect(resEditMultiple.status).toBe(200);
+
+    const resGet4 = await request(app).get(`/tasks/${response.body.id}`).send();
+    expect(resGet4.status).toBe(200);
+    expect(resGet4.body).toStrictEqual({
+      ...task,
+      title: "new title",
+      description: "new desc",
+      state: TaskState.PENDING,
+    });
+
+    // No edits on object --------------------------------------------------------------------------
+  });
+});
+
 describe("Tasks Service", () => {
   it("Create task in task service", async () => {
     const mockCreateTask = jest.fn().mockReturnValue({
@@ -229,6 +414,7 @@ describe("Tasks Service", () => {
       create: mockCreateTask,
       getAll: jest.fn(),
       getById: jest.fn(),
+      update: jest.fn(),
     });
 
     const taskCreated = await taskService.createTask("A", "B");
@@ -265,6 +451,7 @@ describe("Tasks Service", () => {
       create: jest.fn(),
       getById: jest.fn(),
       getAll: mockGetAllTasks,
+      update: jest.fn(),
     });
 
     const tasksGetAll = await taskService.getAllTasks();
@@ -273,23 +460,25 @@ describe("Tasks Service", () => {
   });
 
   it("Get task by id", async () => {
+    const mockedTask = {
+      title: "A",
+      description: "B",
+      createdAt: new Date(),
+      id: "0",
+      state: TaskState.PENDING,
+    };
     const mockGetTaskById = jest.fn().mockImplementation((id) => {
       if (id !== "0") {
         return null;
       }
-      return {
-        title: "A",
-        description: "B",
-        createdAt: new Date(),
-        id: "0",
-        state: TaskState.PENDING,
-      };
+      return mockedTask;
     });
 
     const taskService = new TaskService({
       create: jest.fn(),
       getById: mockGetTaskById,
       getAll: jest.fn(),
+      update: jest.fn(),
     });
 
     const taskGetById = await taskService.getTaskById("1");
@@ -298,12 +487,7 @@ describe("Tasks Service", () => {
 
     const taskGetById2 = await taskService.getTaskById("0");
     expect(mockGetTaskById).toHaveBeenCalled();
-    expect(taskGetById2).toStrictEqual({
-      title: "A",
-      description: "B",
-      createdAt: new Date(),
-      id: "0",
-      state: TaskState.PENDING,
-    });
+    expect;
+    expect(taskGetById2).toStrictEqual(mockedTask);
   });
 });

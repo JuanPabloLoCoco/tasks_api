@@ -1,6 +1,7 @@
 import express from "express";
 import { TaskService } from "../services/TaskService";
 import { TaskRepository } from "../interfaces/TaskRepository";
+import { Task, TaskState } from "../interfaces/Task";
 
 export const tasksRouterBuilder = (taskRepository: TaskRepository) => {
   const router = express.Router();
@@ -49,8 +50,81 @@ export const tasksRouterBuilder = (taskRepository: TaskRepository) => {
       return res.status(200).json(taskFound);
     }
     return res
-      .status(400)
+      .status(404)
       .json({ message: `task with id=${taskId} was not found` });
   });
+
+  router.put("/:id", async (req, res) => {
+    const taskId = req.params.id;
+
+    const taskFound = await taskService.getTaskById(taskId);
+    if (!taskFound) {
+      return res
+        .status(404)
+        .json({ message: `task with id=${taskId} was not found` });
+    }
+
+    const { title, description, state } = req.body;
+
+    const fieldToEdit: Partial<Omit<Task, "id" | "createdAt">> = {};
+
+    if (title !== undefined) {
+      if (
+        typeof title !== "string" ||
+        title.length === 0 ||
+        title.length >= 100
+      ) {
+        return res.status(400).json({
+          message: "field title must be a string with less than 100 characters",
+        });
+      }
+      fieldToEdit["title"] = title;
+    }
+
+    if (description !== undefined) {
+      if (
+        typeof description !== "string" ||
+        description.length === 0 ||
+        description.length >= 500
+      ) {
+        return res.status(400).json({
+          message:
+            "field description must be a string with less than 500 characters",
+        });
+      }
+      fieldToEdit["description"] = description;
+    }
+
+    if (state !== undefined) {
+      if (
+        typeof state !== "string" ||
+        !["complete", "pending"].includes(state)
+      ) {
+        return res.status(400).json({
+          message: `field state can be '${TaskState.PENDING}' or '${TaskState.COMPLETE}'`,
+        });
+      }
+      fieldToEdit["state"] =
+        state === "complete" ? TaskState.COMPLETE : TaskState.PENDING;
+    }
+
+    console.log("Pasaron las validaciones");
+
+    console.log(fieldToEdit);
+
+    if (Object.keys(fieldToEdit).length === 0) {
+      return res.status(200).json(taskFound);
+    }
+
+    const editedTask = await taskService.updateTask({
+      ...taskFound,
+      ...fieldToEdit,
+    });
+
+    console.log("Retornando");
+
+    return res.status(200).json(editedTask);
+  });
+
   return router;
 };
