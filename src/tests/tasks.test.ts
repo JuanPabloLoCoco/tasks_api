@@ -1,8 +1,7 @@
 import request from "supertest";
-import express from "express";
 import { TaskService } from "../services/TaskService";
-import { TaskState, TaskToCreate } from "../interfaces/Task";
-import { setupApp } from "..";
+import { TaskState } from "../interfaces/Task";
+import { setupApp } from "../app";
 import { InMemoryTaskRepository } from "../repositories/InMemoryTaskRepository";
 
 const validationErrors = {
