@@ -6,7 +6,7 @@ import { TaskRepository } from "./interfaces/TaskRepository";
 import { tasksRouterBuilder } from "./routers/tasksRouters";
 
 interface AppRepositories {
-  taskRepositories: TaskRepository;
+  taskRepository: TaskRepository;
 }
 
 interface AppProps {
@@ -29,7 +29,7 @@ export const setupApp = (
     app.use(morgan("combined"));
   }
 
-  app.use("/tasks", tasksRouterBuilder(respositories.taskRepositories));
+  app.use("/tasks", tasksRouterBuilder(respositories.taskRepository));
 
   app.get("/test", (_, res) => {
     res.send("Hello, test route!");

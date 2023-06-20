@@ -13,7 +13,7 @@ const validationErrors = {
 
 describe("POST /tasks", () => {
   const { app, server } = setupApp(
-    { taskRepositories: new InMemoryTaskRepository() },
+    { taskRepository: new InMemoryTaskRepository() },
     { port: 30001 }
   );
 
@@ -126,7 +126,7 @@ describe("POST /tasks", () => {
 
 describe("GET /tasks", () => {
   const { app, server } = setupApp(
-    { taskRepositories: new InMemoryTaskRepository() },
+    { taskRepository: new InMemoryTaskRepository() },
     { port: 30002 }
   );
 
@@ -172,7 +172,7 @@ describe("GET /tasks", () => {
 
 describe("GET /tasks/{taskId}", () => {
   const { app, server } = setupApp(
-    { taskRepositories: new InMemoryTaskRepository() },
+    { taskRepository: new InMemoryTaskRepository() },
     { port: 30003 }
   );
 
@@ -225,7 +225,7 @@ describe("PUT /tasks/{taskId}", () => {
   const taskRepository = new InMemoryTaskRepository([defaultTask]);
 
   const { app, server } = setupApp(
-    { taskRepositories: taskRepository },
+    { taskRepository: taskRepository },
     { port: 30004 }
   );
 
@@ -402,7 +402,7 @@ describe("PUT /tasks/{taskId}", () => {
 describe("DELETE /tasks/{taskId}", () => {
   const taskRepository = new InMemoryTaskRepository();
   const { app, server } = setupApp(
-    { taskRepositories: taskRepository },
+    { taskRepository: taskRepository },
     { port: 30005 }
   );
 

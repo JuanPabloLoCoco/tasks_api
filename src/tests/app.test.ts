@@ -3,7 +3,7 @@ import { setupApp } from "../app";
 import { InMemoryTaskRepository } from "../repositories/InMemoryTaskRepository";
 
 const { app, server } = setupApp(
-  { taskRepositories: new InMemoryTaskRepository() },
+  { taskRepository: new InMemoryTaskRepository() },
   { port: 3001 }
 );
 
